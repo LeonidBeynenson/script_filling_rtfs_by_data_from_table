@@ -8,13 +8,10 @@ from copy import deepcopy
 import logging as log
 
 ALPHABET_CSV_NAME = "alphabet_for_csv.txt"
-ALPHABET_RTF_NAME = "alphabet_for_rtf.rtf"
+ALPHABET_RTF_NAME = "alphabet_for_rtf_ch2.rtf"
 
-ALPHABET_CSV_NAME = "alphabet1_forcsv.txt"
-ALPHABET_RTF_NAME = "alphabet1_forrtf_changed1.rtf"
-
-RTF_RULANG_PREFIX = r"\hich\f47"
-RTF_RULANG_POSTFIX = r"\loch\f47"
+#RTF_RULANG_PREFIX = r"\hich\f47"
+#RTF_RULANG_POSTFIX = r"\loch\f47"
 
 DEBUG_MODE = True
 if DEBUG_MODE:
@@ -43,7 +40,6 @@ def read_alphabets(alphabet_csv_path, alphabet_rtf_path):
     rtf_charcodes = []
     was_begin = False
     was_first_char = False
-    should_stop = False
     with Path(alphabet_rtf_path).open() as f_rtf:
         for line in f_rtf:
             line = line.strip("\n")
@@ -52,23 +48,24 @@ def read_alphabets(alphabet_csv_path, alphabet_rtf_path):
                 continue
             if not was_begin:
                 continue
-            if line.startswith(r"\par '"):
+            #log.debug("aline = {}".format(line))
+            if line.startswith(r"{\par "):
                 was_first_char = True
 
             if not was_first_char:
+                log.debug("no first char")
                 continue
 
-            prefix = r"\par "
-            assert line.startswith(prefix), "Line '{}' is not started with prefix in RTF alphabet part".format(line)
+            prefix = r"{\par "
+            if not line.startswith(prefix):
+                break
             cur_charcode = line[len(prefix):]
 
-            if cur_charcode.endswith("}"):
-                cur_charcode = cur_charcode[0:-1]
-                should_stop = True
+            assert cur_charcode.endswith("}")
+            cur_charcode = "{" + cur_charcode
 
             rtf_charcodes.append(cur_charcode)
-            if should_stop:
-                break
+
     if len(csv_chars) != len(rtf_charcodes):
         log.error("Different length of csv_chars and rtf_charcodes!")
         log.error(pformat({"csv_chars": csv_chars}))
@@ -201,32 +198,41 @@ def read_and_convert_csv(csv_path, a_map):
 
     splitted_lines = splitted_lines[1:]
     converted_lines = convert_csv(splitted_lines, a_map)
+    assert len(splitted_lines) == len(converted_lines)
 
     list_map_substs = []
-    for conv_line in converted_lines:
+    for spl_line, conv_line in zip(splitted_lines, converted_lines):
         cur_map = {col_name: conv_line[i] for i, col_name in column_names.items()}
-        list_map_substs.append(cur_map)
+        cur_nonconverted_map = {col_name: spl_line[i] for i, col_name in column_names.items()}
+        list_map_substs.append({"converted": cur_map, "orig": cur_nonconverted_map})
 
     return list_map_substs
 
 
 def make_rtf_substitute(src_path, dst_path, map_subst):
+    log.info("Begin substitution for the file {} => {}".format(src_path, dst_path))
     subs_keys = set(map_subst.keys())
     lines = []
+    keys_was_subst = set()
     with Path(src_path).open() as f_src:
         for line in f_src:
             new_line = deepcopy(line)
             for k, v in map_subst.items():
                 if k in new_line:
-                    new_line = new_line.replace(k, RTF_RULANG_PREFIX + " " + v + " " + RTF_RULANG_POSTFIX)
+                    new_line = new_line.replace(k, v)
+                    keys_was_subst.add(k)
             lines.append(new_line)
     with Path(dst_path).open("w") as f_dst:
         for line in lines:
             f_dst.write(line)
+    log.info("Substitution was done for the file {} => {}".format(src_path, dst_path))
 
-def make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs):
-    for i, map_subst in enumerate(list_map_substs):
-        dst_path = dst_prefix + "_{:04}.rtf".format(i)
+def make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_dst_name):
+    for i, d_map_subst in enumerate(list_map_substs):
+        map_subst = d_map_subst["converted"]
+        map_orig = d_map_subst["orig"]
+        name_part = map_orig[key_for_dst_name]
+        dst_path = dst_prefix + "_{:04}_{}.rtf".format(i, name_part)
         make_rtf_substitute(src_path, dst_path, map_subst)
 
 
@@ -236,9 +242,14 @@ def main():
     dst_prefix = "handled"
     src_path = "PREDPISANIE_1.rtf"
 
-    a_map = read_alphabets(ALPHABET_CSV_NAME, ALPHABET_RTF_NAME)
+    key_for_dst_name="[NAME]"
+    alphabet_csv_path = Path(__file__).parent / ALPHABET_CSV_NAME
+    alphabet_rtf_path = Path(__file__).parent / ALPHABET_RTF_NAME
+
+
+    a_map = read_alphabets(alphabet_csv_path, alphabet_rtf_path)
     list_map_substs = read_and_convert_csv(csv_path, a_map)
-    make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs)
+    make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_dst_name)
 
 if __name__ == "__main__":
     main()
