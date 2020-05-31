@@ -62,7 +62,7 @@ def read_alphabets(alphabet_csv_path, alphabet_rtf_path):
             cur_charcode = line[len(prefix):]
 
             assert cur_charcode.endswith("}")
-            cur_charcode = "{" + cur_charcode
+            cur_charcode = cur_charcode[:-1]
 
             rtf_charcodes.append(cur_charcode)
 
@@ -179,8 +179,11 @@ def convert_csv(splitted_lines, a_map):
                 log.error(chunk)
                 log.error("absent_chars = {}".format(set(chunk) - set(a_map.keys())))
                 a_map = deepcopy(a_map)
+                if not DEBUG_MODE:
+                    raise RuntimeError("ERROR: line is not in alphabet")
                 for c in set(chunk) - set(a_map.keys()):
                     a_map[c] = " "
+
             conv_chunk = convert_chunk(chunk, a_map)
             cur_conv_line.append(conv_chunk)
 
@@ -192,7 +195,7 @@ def read_and_convert_csv(csv_path, a_map):
     splitted_lines = read_csv(csv_path)
 
     column_names = splitted_lines[0]
-    column_names = {i:"[" + col_name + "]" for i, col_name in enumerate(column_names) if col_name}
+    column_names = {i: convert_chunk(col_name, a_map) for i, col_name in enumerate(column_names) if col_name}
     log.debug(pformat({"column_names": column_names}))
 
 
@@ -202,11 +205,15 @@ def read_and_convert_csv(csv_path, a_map):
 
     list_map_substs = []
     for spl_line, conv_line in zip(splitted_lines, converted_lines):
-        cur_map = {col_name: conv_line[i] for i, col_name in column_names.items()}
-        cur_nonconverted_map = {col_name: spl_line[i] for i, col_name in column_names.items()}
+        #log.debug("conv_line = {}".format(pformat(conv_line)))
+        log.debug("spl_line = {}".format(pformat(spl_line)))
+        assert len(conv_line) == len(spl_line)
+        cur_len = len(conv_line)
+        cur_map = {col_name: conv_line[i] for i, col_name in column_names.items() if i < cur_len}
+        cur_nonconverted_map = {col_name: spl_line[i] for i, col_name in column_names.items() if i < cur_len}
         list_map_substs.append({"converted": cur_map, "orig": cur_nonconverted_map})
 
-    return list_map_substs
+    return list_map_substs, column_names
 
 
 def make_rtf_substitute(src_path, dst_path, map_subst):
@@ -238,17 +245,33 @@ def make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_
 
 
 def main():
-    csv_path = "MyCopy_Zapis_NaPraktiky_forchecks__01.csv"
-    dst_prefix = "handled"
-    src_path = "PREDPISANIE_1.rtf"
+    all_csv_files = list(Path(".").resolve().glob("*.csv"))
+    if len(all_csv_files) != 1:
+        print("ERROR: the csv files in the current folder =\n{}\n -- should be one .csv file".format(pformat(all_csv_files)))
+        raise RuntimeError("Wrong number of csv files")
+    #csv_path = "MyCopy_Zapis_NaPraktiky_forchecks__01.csv"
+    csv_path = all_csv_files[0]
 
-    key_for_dst_name="[NAME]"
+    all_rtf_files = list(Path(".").resolve().glob("_*.rtf"))
+    if len(all_rtf_files) != 1:
+        print("ERROR: the rtf files in the current folder =\n{}\n -- should be one .rtf file".format(pformat(all_rtf_files)))
+        raise RuntimeError("Wrong number of rtf files")
+
+    #src_path = "PREDPISANIE_1.rtf"
+    src_path = all_rtf_files[0]
+
+    #dst_prefix = Path(all_rtf_files).stem
+    dst_prefix = "DOCS_for"
+
+    key_for_dst_index=0
+
     alphabet_csv_path = Path(__file__).parent / ALPHABET_CSV_NAME
     alphabet_rtf_path = Path(__file__).parent / ALPHABET_RTF_NAME
 
 
     a_map = read_alphabets(alphabet_csv_path, alphabet_rtf_path)
-    list_map_substs = read_and_convert_csv(csv_path, a_map)
+    list_map_substs, column_names = read_and_convert_csv(csv_path, a_map)
+    key_for_dst_name = column_names[key_for_dst_index]
     make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_dst_name)
 
 if __name__ == "__main__":
