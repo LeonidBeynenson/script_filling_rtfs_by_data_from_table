@@ -13,7 +13,7 @@ ALPHABET_RTF_NAME = "alphabet_for_rtf_ch2.rtf"
 #RTF_RULANG_PREFIX = r"\hich\f47"
 #RTF_RULANG_POSTFIX = r"\loch\f47"
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 if DEBUG_MODE:
     root_logger= log.getLogger()
     root_logger.setLevel(log.DEBUG) # or whatever
@@ -85,13 +85,17 @@ def split_csv_line(line_iter):
     if line is None:
         return None
     line = line.strip("\n")
-    log.info("begin working with line ='{}'".format(line))
+    log.debug("begin working with line ='{}'".format(line))
 
     chunks = []
     cur_part = line
-    while cur_part:
+    was_last_comma = False
+    while cur_part or was_last_comma:
         log.debug("CYCLE1: cur_part ='{}'".format(pformat(cur_part)))
         log.debug("        chunks =\n{}".format(pformat(chunks)))
+
+        was_last_comma = False
+
         if not cur_part.startswith('"'):
             ind = cur_part.find(',')
             if ind == -1:
@@ -103,6 +107,7 @@ def split_csv_line(line_iter):
             cur_chunk = cur_part[:ind]
             cur_part = cur_part[ind+1:]
             chunks.append(cur_chunk)
+            was_last_comma = True
             continue
 
         assert cur_part.startswith('"')
@@ -125,7 +130,7 @@ def split_csv_line(line_iter):
                 line += "\n" + next_line
                 cur_part += "\n" + next_line
                 log.debug("        -- getting next line")
-                continue
+                continue # CYCLE2
 
             cur_chunk += cur_part[:ind]
             cur_part = cur_part[ind:]
@@ -142,11 +147,13 @@ def split_csv_line(line_iter):
                 log.error("cur_part =\n" + cur_part)
                 raise RuntimeError("ERROR in splitting line")
             if cur_part:
+                assert cur_part.startswith(',')
                 cur_part = cur_part[1:]
-            break
+                was_last_comma = True
+            break # from CYCLE2
 
-    log.info("end working with line ='{}'".format(line))
-    log.info("return chunks =\n{}".format(pformat(chunks)))
+    log.debug("end working with line ='{}'".format(line))
+    log.debug("return chunks =\n{}".format(pformat(chunks)))
     return chunks
 
 
@@ -179,8 +186,9 @@ def convert_csv(splitted_lines, a_map):
                 log.error(chunk)
                 log.error("absent_chars = {}".format(set(chunk) - set(a_map.keys())))
                 a_map = deepcopy(a_map)
-                if not DEBUG_MODE:
-                    raise RuntimeError("ERROR: line is not in alphabet")
+                # Decided not to throw error
+                # if not DEBUG_MODE:
+                #    raise RuntimeError("ERROR: line is not in alphabet")
                 for c in set(chunk) - set(a_map.keys()):
                     a_map[c] = " "
 
@@ -192,6 +200,7 @@ def convert_csv(splitted_lines, a_map):
     return converted_lines
 
 def read_and_convert_csv(csv_path, a_map):
+    log.info("Begin reading and converting csv file {}".format(csv_path))
     splitted_lines = read_csv(csv_path)
 
     column_names = splitted_lines[0]
@@ -208,11 +217,18 @@ def read_and_convert_csv(csv_path, a_map):
         #log.debug("conv_line = {}".format(pformat(conv_line)))
         log.debug("spl_line = {}".format(pformat(spl_line)))
         assert len(conv_line) == len(spl_line)
+
         cur_len = len(conv_line)
+        assert all(i < cur_len for i in column_names.keys())
+
         cur_map = {col_name: conv_line[i] for i, col_name in column_names.items() if i < cur_len}
         cur_nonconverted_map = {col_name: spl_line[i] for i, col_name in column_names.items() if i < cur_len}
         list_map_substs.append({"converted": cur_map, "orig": cur_nonconverted_map})
 
+    log.info("End reading and converting csv file {}".format(csv_path))
+    log.debug("Return:\n{}\n{}\n".format(
+        pformat({"list_map_substs": list_map_substs}),
+        pformat({"column_names": column_names})))
     return list_map_substs, column_names
 
 
@@ -245,14 +261,14 @@ def make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_
 
 
 def main():
-    all_csv_files = list(Path(".").resolve().glob("*.csv"))
+    all_csv_files = list(Path(__file__).resolve().parent.glob("*.csv"))
     if len(all_csv_files) != 1:
         print("ERROR: the csv files in the current folder =\n{}\n -- should be one .csv file".format(pformat(all_csv_files)))
         raise RuntimeError("Wrong number of csv files")
     #csv_path = "MyCopy_Zapis_NaPraktiky_forchecks__01.csv"
     csv_path = all_csv_files[0]
 
-    all_rtf_files = list(Path(".").resolve().glob("_*.rtf"))
+    all_rtf_files = list(Path(__file__).resolve().parent.glob("_*.rtf"))
     if len(all_rtf_files) != 1:
         print("ERROR: the rtf files in the current folder =\n{}\n -- should be one .rtf file".format(pformat(all_rtf_files)))
         raise RuntimeError("Wrong number of rtf files")
