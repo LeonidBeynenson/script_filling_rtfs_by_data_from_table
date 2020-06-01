@@ -166,6 +166,13 @@ def read_csv(csv_path):
             if line_chunks is None:
                 break
             splitted_lines.append(line_chunks)
+
+    assert len(splitted_lines) > 0
+    for v in splitted_lines:
+        if len(v) != len(splitted_lines[0]):
+            log.error("ERROR: Consistency check: all csv lines should have equal len:\n{}".format(v))
+            raise RuntimeError("ERROR: Consistency check: all csv lines should have equal len:\n{}".format(v))
+
     return splitted_lines
 
 def convert_chunk(chunk, a_map):
