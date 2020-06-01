@@ -296,6 +296,8 @@ def main():
     list_map_substs, column_names = read_and_convert_csv(csv_path, a_map)
     key_for_dst_name = column_names[key_for_dst_index]
     make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_dst_name)
+    log.info("Done")
+    print("Done")
 
 if __name__ == "__main__":
     main()
