@@ -241,7 +241,7 @@ def read_and_convert_csv(csv_path, a_map):
 
 
 def make_rtf_substitute(src_path, dst_path, map_subst):
-    log.info("Begin substitution for the file {} => {}".format(src_path, dst_path))
+    log.info("Begin substitution for the file => {}".format(dst_path))
     subs_keys = set(map_subst.keys())
     lines = []
     keys_was_subst = set()
@@ -256,17 +256,37 @@ def make_rtf_substitute(src_path, dst_path, map_subst):
     with Path(dst_path).open("w") as f_dst:
         for line in lines:
             f_dst.write(line)
-    log.info("Substitution was done for the file {} => {}".format(src_path, dst_path))
+    log.info("Substitution was done for the file => {}".format(dst_path))
 
-def make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_dst_name):
+
+def make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_dst_name,
+                                 possible_chars_for_path):
+    possible_chars_for_path = set(possible_chars_for_path)
     for i, d_map_subst in enumerate(list_map_substs):
         map_subst = d_map_subst["converted"]
         map_orig = d_map_subst["orig"]
+
         name_part = map_orig[key_for_dst_name]
-        dst_path = dst_prefix + "_{:04}_{}.rtf".format(i, name_part)
+        name_part = name_part.strip()
+        fixed_name_part = "".join(c for c in name_part if c in possible_chars_for_path)
+        fixed_name_part = fixed_name_part.replace(" ", "_")
+        fixed_name_part = fixed_name_part.replace(",", "_")
+        fixed_name_part = fixed_name_part.replace(".", "_")
+
+        dst_path = dst_prefix + "_{:04}_{}.rtf".format(i, fixed_name_part)
         make_rtf_substitute(src_path, dst_path, map_subst)
 
-
+def get_possible_chars_for_path(alphabet):
+    alphabet = set(alphabet)
+    alphabet -= {"\n", ":", "/", "\\",
+                 "!", "\"", "#", "$", "%", "&", "'", "(", ")", "*", "+",
+                 "<", "=", ">", "?", "@",
+                 "[", "\\", "]", "^",
+                 "`",
+                 "{", "|", "}", "~", "«", "»",
+                 "№",
+                 }
+    return alphabet
 
 def main():
     all_csv_files = list(Path(__file__).resolve().parent.glob("*.csv"))
@@ -294,9 +314,12 @@ def main():
 
 
     a_map = read_alphabets(alphabet_csv_path, alphabet_rtf_path)
+    possible_chars_for_path = get_possible_chars_for_path(a_map.keys())
+
     list_map_substs, column_names = read_and_convert_csv(csv_path, a_map)
     key_for_dst_name = column_names[key_for_dst_index]
-    make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_dst_name)
+    make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_dst_name,
+                                 possible_chars_for_path)
     log.info("Done")
     print("Done")
 
