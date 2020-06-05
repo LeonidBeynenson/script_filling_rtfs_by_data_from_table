@@ -277,6 +277,7 @@ def make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_
         make_rtf_substitute(src_path, dst_path, map_subst)
 
 def get_possible_chars_for_path(alphabet):
+    # TODO: make a separate alphabet file for file names
     alphabet = set(alphabet)
     alphabet -= {"\n", ":", "/", "\\",
                  "!", "\"", "#", "$", "%", "&", "'", "(", ")", "*", "+",
