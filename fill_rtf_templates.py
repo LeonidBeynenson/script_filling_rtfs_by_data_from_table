@@ -1,11 +1,9 @@
 from pathlib import Path
-try:
-    from pprint import pprint, pformat
-except:
-    print("Cannot import pprint")
+from pprint import pprint, pformat
 
 from copy import deepcopy
 import logging as log
+import sys
 
 ALPHABET_CSV_NAME = "alphabet_for_csv.txt"
 ALPHABET_RTF_NAME = "alphabet_for_rtf_ch2.rtf"
@@ -15,17 +13,21 @@ ALPHABET_RTF_NAME = "alphabet_for_rtf_ch2.rtf"
 
 DEBUG_MODE = False
 if DEBUG_MODE:
-    root_logger= log.getLogger()
-    root_logger.setLevel(log.DEBUG) # or whatever
-    handler = log.FileHandler('log.txt', 'w', 'utf-8') # or whatever
-    handler.setFormatter(log.Formatter('%(filename)s:%(lineno)s - %(funcName)s %(message)s')) # or whatever
-    root_logger.addHandler(handler)
+    log_level_for_file = log.DEBUG
 else:
-    root_logger= log.getLogger()
-    root_logger.setLevel(log.ERROR) # or whatever
-    handler = log.FileHandler('log.txt', 'w', 'utf-8') # or whatever
-    handler.setFormatter(log.Formatter('%(filename)s:%(lineno)s - %(funcName)s %(message)s')) # or whatever
-    root_logger.addHandler(handler)
+    log_level_for_file = log.ERROR
+
+root_logger= log.getLogger()
+root_logger.setLevel(log.DEBUG)
+handler = log.FileHandler('log_filling.txt', 'w', 'utf-8')
+handler.setLevel(log_level_for_file)
+handler.setFormatter(log.Formatter('%(filename)s:%(lineno)s - %(funcName)s %(message)s'))
+root_logger.addHandler(handler)
+
+streamhandler = log.StreamHandler(sys.stdout)
+streamhandler.setLevel(log.INFO)
+streamhandler.setFormatter(log.Formatter('%(filename)s: %(message)s'))
+root_logger.addHandler(streamhandler)
 
 
 def read_alphabets(alphabet_csv_path, alphabet_rtf_path):
@@ -76,8 +78,7 @@ def read_alphabets(alphabet_csv_path, alphabet_rtf_path):
     a_map[" "] = " "
     a_map["\n"] = r"\par "
 
-    if DEBUG_MODE:
-        log.debug(pformat({"a_map": a_map}))
+    log.debug(pformat({"a_map": a_map}))
     return a_map
 
 def split_csv_line(line_iter):
@@ -301,4 +302,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
