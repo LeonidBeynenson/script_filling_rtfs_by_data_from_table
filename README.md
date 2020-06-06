@@ -1,5 +1,5 @@
 The homepage of the scripts:  
-[https://github.com/LeonidBeynenson/script_filling_rtfs_by_data_from_table]
+https://github.com/LeonidBeynenson/script_filling_rtfs_by_data_from_table
 
 # Filling RTF files by data from a CSV table
 
@@ -57,7 +57,7 @@ This script uses MS Word application for that.
 For calling MS Word operations it uses pywin32 Python library to use the COM interface.
 
 See documentation of win32gui library here  
-[http://timgolden.me.uk/pywin32-docs/contents.html]
+http://timgolden.me.uk/pywin32-docs/contents.html
 
 ## Usage
 
