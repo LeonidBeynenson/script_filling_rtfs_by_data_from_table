@@ -19,7 +19,7 @@ PDF_FILETYPE_CODE = 17
 
 def main():
     print("Close all Word documents!")
-    enter = input("Press Enter when all is closed")
+    enter = input("Press Enter when all Word documents are closed")
 
     cur_path = Path(__file__).parent.resolve()
     docs_paths = list(cur_path.glob("*.rtf"))
@@ -50,7 +50,7 @@ def main():
             continue
 
         log.info(prefix + "The file {} is opened".format(p.name))
-        p2 = p.with_suffix(".pdf")
+        p2 = p.with_name("PDF" + p.name).with_suffix(".pdf")
         try:
             doc.SaveAs(str(p2), 17)
         except:
