@@ -2,7 +2,7 @@
 
 ## General description
 
-This repository contains one script `fill_rtf_templates.py` that allows filling RTF files using data from a CSV table.
+This repository contains the script `fill_rtf_templates.py` that allows filling RTF files using data from a CSV table.
 
 To run the script place in this folder one .csv file in utf-8 encoding  
 (typically the file is received from Google Sheets using Files -> Export -> Export as CSV)
@@ -25,3 +25,49 @@ so I filled the alphabet files for cyrillic letters and several special chars.
 
 Also note that the placeholderds should be written in the same language as the values in CSV files  
 (it was a simple and rude approach to resolve the issue with RTF context)
+
+## Usage
+
+No parameters are required.
+Use python3 to run the script `fill_rtf_templates.py`.
+
+The script searches the RTF template and the CSV file in the folder where it is placed.
+
+## Requirements
+
+Checked on Windows Anaconda3(64-bit).
+
+Also the script requires the package pprint, which may be installed on Anaconda by the command
+```
+conda install -c conda-forge pprintpp
+```
+
+# Converting RTF files to PDF files
+
+## General description
+
+Also this repository contains the script `convert_rtf_files_to_pdf.py` that allows converting all RTF in the
+folder of the script to PDF files.
+
+This script uses MS Word application for that.
+
+For calling MS Word operations it uses pywin32 Python library to use the COM interface.
+
+See documentation of win32gui library here  
+[http://timgolden.me.uk/pywin32-docs/contents.html]
+
+## Usage
+
+No parameters are required.
+Use python3 to run the script `convert_rtf_files_to_pdf.py`.
+
+The script searches the RTF files in the folder where it is placed.
+
+## Requirements
+
+Checked on Windows Anaconda3(64-bit).
+
+The pywin32 library may be installed by the command
+```
+conda install -c anaconda pywin32
+```
