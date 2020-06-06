@@ -1,3 +1,6 @@
+The homepage of the scripts:  
+[https://github.com/LeonidBeynenson/script_filling_rtfs_by_data_from_table]
+
 # Filling RTF files by data from a CSV table
 
 ## General description
