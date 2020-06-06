@@ -7,6 +7,7 @@ import sys
 
 ALPHABET_CSV_NAME = "alphabet_for_csv.txt"
 ALPHABET_RTF_NAME = "alphabet_for_rtf_ch2.rtf"
+ALPHABET_FILENAMES_NAME = "alphabet_for_file_names.txt"
 
 #RTF_RULANG_PREFIX = r"\hich\f47"
 #RTF_RULANG_POSTFIX = r"\loch\f47"
@@ -30,7 +31,7 @@ streamhandler.setFormatter(log.Formatter('%(filename)s: %(message)s'))
 root_logger.addHandler(streamhandler)
 
 
-def read_alphabets(alphabet_csv_path, alphabet_rtf_path):
+def read_alphabets(alphabet_csv_path, alphabet_rtf_path, alphabet_filenames_path):
     csv_chars = []
     with Path(alphabet_csv_path).open(encoding="utf8") as f_csv:
         for line in f_csv:
@@ -79,7 +80,15 @@ def read_alphabets(alphabet_csv_path, alphabet_rtf_path):
     a_map["\n"] = r"\par "
 
     log.debug(pformat({"a_map": a_map}))
-    return a_map
+
+    possible_chars_for_path = set()
+    with Path(alphabet_filenames_path).open(encoding="utf8") as f_a_names:
+        for line in f_a_names:
+            line = line.strip()
+            assert len(line) == 1
+            possible_chars_for_path.add(line)
+    possible_chars_for_path.add(" ")
+    return a_map, possible_chars_for_path
 
 def split_csv_line(line_iter):
     line = next(line_iter, None)
@@ -277,7 +286,6 @@ def make_rtf_substitutes_for_all(src_path, dst_prefix, list_map_substs, key_for_
         make_rtf_substitute(src_path, dst_path, map_subst)
 
 def get_possible_chars_for_path(alphabet):
-    # TODO: make a separate alphabet file for file names
     alphabet = set(alphabet)
     alphabet -= {"\n", ":", "/", "\\",
                  "!", "\"", "#", "$", "%", "&", "'", "(", ")", "*", "+",
@@ -312,10 +320,11 @@ def main():
 
     alphabet_csv_path = Path(__file__).parent / ALPHABET_CSV_NAME
     alphabet_rtf_path = Path(__file__).parent / ALPHABET_RTF_NAME
+    alphabet_filenames_path = Path(__file__).parent / ALPHABET_FILENAMES_NAME
 
 
-    a_map = read_alphabets(alphabet_csv_path, alphabet_rtf_path)
-    possible_chars_for_path = get_possible_chars_for_path(a_map.keys())
+    a_map, possible_chars_for_path = read_alphabets(alphabet_csv_path, alphabet_rtf_path, alphabet_filenames_path)
+    possible_chars_for_path = get_possible_chars_for_path(possible_chars_for_path)
 
     list_map_substs, column_names = read_and_convert_csv(csv_path, a_map)
     key_for_dst_name = column_names[key_for_dst_index]
